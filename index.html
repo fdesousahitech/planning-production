@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning de production - 12 mois</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #f9f9f7;
+            color: #1a1a18;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e5e5e3;
+            padding-bottom: 1.5rem;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #8b8b86;
+            margin-bottom: 1.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            border: 0.5px solid #d3d1c7;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a18;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #f5f5f3;
+            border-color: #b4b2a9;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        .message {
+            padding: 1rem;
+            background: #e6f1fb;
+            color: #185fa5;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 13px;
+            border-left: 4px solid #185fa5;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: #f5f5f3;
+            border: 1px solid #e5e5e3;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 12px;
+            color: #8b8b86;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-value {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .legend-box.realised {
+            background: #e6f1fb;
+            border: 1px solid #185fa5;
+        }
+        
+        .legend-box.forecast {
+            background: #fef3c7;
+            border: 1px solid #ba7517;
+        }
+        
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        
+        .months-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .months-grid::-webkit-scrollbar-track {
+            background: #f9f9f7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb {
+            background: #d3d1c7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb:hover {
+            background: #b4b2a9;
+        }
+        
+        .month-column {
+            background: #f9f9f7;
+            border: 2px solid #e5e5e3;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 360px;
+        }
+        
+        .month-header {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e5e3;
+        }
+        
+        .month-count {
+            font-size: 11px;
+            color: #8b8b86;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .clients-area {
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .client-item {
+            padding: 0.6rem 0.75rem;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            user-select: none;
+        }
+        
+        .client-realised {
+            background: #e6f1fb;
+            color: #185fa5;
+        }
+        
+        .client-forecast {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-section {
+            margin-bottom: 2rem;
+        }
+        
+        .status-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b8b86;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .status-item {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .status-halt {
+            background: #f5f5f3;
+            color: #5f5e5a;
+            border: 0.5px solid #e5e5e3;
+        }
+        
+        .status-cancel {
+            background: #fcebeb;
+            color: #a32d2d;
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e3;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a8a3;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .months-grid {
+                grid-template-columns: repeat(12, minmax(120px, 1fr));
+                gap: 0.75rem;
+            }
+            
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .month-column {
+                padding: 0.75rem;
+                min-height: 320px;
+            }
+            
+            .client-item {
+                padding: 0.5rem 0.6rem;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Planning de production</h1>
+            <p class="subtitle">Mise en production des clients – 12 mois</p>
+            <div class="controls">
+                <button onclick="exportCSV()">⬇ Exporter en CSV</button>
+                <button onclick="window.print()">🖨 Imprimer</button>
+            </div>
+        </div>
+
+        <div class="message">
+            📖 Planning en lecture seule - Exportez ou imprimez les données
+        </div>
+
+        <div style="font-size: 12px; color: #8b8b86; margin-bottom: 1rem; text-align: right;">
+            ➜ 12 mois • Scroll horizontal si nécessaire
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <div class="summary-label">Total clients</div>
+                <div class="summary-value" id="total">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Réalisé (jan-juin)</div>
+                <div class="summary-value" id="realised">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Prévisionnel (juil+)</div>
+                <div class="summary-value" id="forecast">0</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box realised"></div>
+                <span>Réalisé (janvier à juin)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box forecast"></div>
+                <span>Prévisionnel (juillet et après)</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 16px;">🔄</span>
+                <span>Migration</span>
+            </div>
+        </div>
+
+        <div class="months-grid" id="monthsGrid"></div>
+
+        <div class="status-section">
+            <div class="status-title">Dossiers à l'arrêt</div>
+            <div class="status-items">
+                <div class="status-item status-halt">BGA</div>
+                <div class="status-item status-halt">Tiremaster</div>
+                <div class="status-item status-halt">Auto Discount Lease</div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div class="status-title">Annulation</div>
+            <div class="status-items">
+                <div class="status-item status-cancel">Cargo Corse</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Planning en lecture seule • 12 mois • Vue statique</p>
+        </div>
+    </div>
+
+    <script>
+        const monthOrder = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        
+        const planningData = {
+            'Janvier': { clients: [], realised: true },
+            'Février': { clients: [
+                {name: 'AGLC', isMigration: true},
+                {name: 'Cool', isMigration: false},
+                {name: 'OC Lease', isMigration: false},
+                {name: 'Marie Galante', isMigration: true},
+                {name: '5B', isMigration: false}
+            ], realised: true },
+            'Mars': { clients: [
+                {name: 'Loca Express', isMigration: true},
+                {name: 'Musée', isMigration: true},
+                {name: 'Loc\'Alliance', isMigration: true},
+                {name: 'SL2S', isMigration: false},
+                {name: 'Exclusive Cars', isMigration: false}
+            ], realised: true },
+            'Avril': { clients: [
+                {name: 'Semi Loc', isMigration: true},
+                {name: 'Aloé', isMigration: false},
+                {name: 'Ollandini Avis', isMigration: false},
+                {name: 'Sixt Réunion', isMigration: false}
+            ], realised: true },
+            'Mai': { clients: [
+                {name: 'Ucar Harmony', isMigration: false},
+                {name: 'Elite', isMigration: false},
+                {name: 'EMB', isMigration: false},
+                {name: 'de Willermin LLD', isMigration: false},
+                {name: 'Locaban', isMigration: true},
+                {name: 'CTTRS', isMigration: false},
+                {name: 'Only Drive', isMigration: false}
+            ], realised: true },
+            'Juin': { clients: [
+                {name: 'Dynamyk RDC', isMigration: false},
+                {name: 'SCF', isMigration: false}
+            ], realised: true },
+            'Juillet': { clients: [
+                {name: 'UPS', isMigration: false},
+                {name: 'Leriche', isMigration: true},
+                {name: 'Loc At Me', isMigration: true},
+                {name: 'Escale', isMigration: false},
+                {name: 'Alte', isMigration: false},
+                {name: 'Carepolis', isMigration: false},
+                {name: 'Hertz BPA', isMigration: false}
+            ], realised: false },
+            'Août': { clients: [
+                {name: 'Utilitaire 13', isMigration: false},
+                {name: 'de Willermin LCD', isMigration: false},
+                {name: 'JB Location', isMigration: true},
+                {name: 'RL Location', isMigration: false}
+            ], realised: false },
+            'Septembre': { clients: [
+                {name: 'Atlas Avis', isMigration: false},
+                {name: 'AJP Avis', isMigration: false},
+                {name: 'KSR', isMigration: false},
+                {name: 'Ciel', isMigration: false},
+                {name: 'Réseau Poids Lourds', isMigration: false},
+                {name: 'Flexi Drive', isMigration: false}
+            ], realised: false },
+            'Octobre': { clients: [], realised: false },
+            'Novembre': { clients: [
+                {name: 'SIT', isMigration: false}
+            ], realised: false },
+            'Décembre': { clients: [], realised: false }
+        };
+
+        function initPlanning() {
+            const grid = document.getElementById('monthsGrid');
+            grid.innerHTML = '';
+            
+            monthOrder.forEach(month => {
+                const monthData = planningData[month];
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month-column';
+                
+                const header = document.createElement('div');
+                header.className = 'month-header';
+                header.textContent = month;
+                
+                const count = document.createElement('div');
+                count.className = 'month-count';
+                count.textContent = `${monthData.clients.length} client${monthData.clients.length > 1 ? 's' : ''}`;
+                
+                const area = document.createElement('div');
+                area.className = 'clients-area';
+                
+                monthData.clients.forEach(client => {
+                    const clientDiv = document.createElement('div');
+                    clientDiv.className = `client-item ${monthData.realised ? 'client-realised' : 'client-forecast'}`;
+                    clientDiv.textContent = client.isMigration ? '🔄 ' + client.name : client.name;
+                    area.appendChild(clientDiv);
+                });
+                
+                monthDiv.appendChild(header);
+                monthDiv.appendChild(count);
+                monthDiv.appendChild(area);
+                grid.appendChild(monthDiv);
+            });
+            
+            updateSummary();
+        }
+
+        function updateSummary() {
+            let total = 0;
+            let realised = 0;
+            
+            monthOrder.forEach(month => {
+                const count = planningData[month].clients.length;
+                total += count;
+                if (planningData[month].realised) {
+                    realised += count;
+                }
+            });
+            
+            const forecast = total - realised;
+            
+            document.getElementById('total').textContent = total;
+            document.getElementById('realised').textContent = realised;
+            document.getElementById('forecast').textContent = forecast;
+        }
+
+        function exportCSV() {
+            let csv = 'Mois,Nombre de clients,Clients\n';
+            monthOrder.forEach(month => {
+                const data = planningData[month];
+                const clients = data.clients.map(c => c.name).join('; ');
+                csv += `"${month}",${data.clients.length},"${clients}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `planning_production_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialiser au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            initPlanning();
+        });
+    </script>
+</body>
+</html>
