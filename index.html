@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning de production - Sécurisé</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #f9f9f7;
+            color: #1a1a18;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .login-overlay.show {
+            display: flex;
+        }
+        
+        .login-box {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-box h2 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        
+        .login-box p {
+            font-size: 13px;
+            color: #8b8b86;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a1a18;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input {
+            padding: 0.75rem;
+            border: 0.5px solid #d3d1c7;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #185fa5;
+            box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
+        }
+        
+        .login-button {
+            padding: 0.75rem;
+            background: #185fa5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+        
+        .login-button:hover {
+            background: #134578;
+        }
+        
+        .login-button:active {
+            transform: scale(0.98);
+        }
+        
+        .error-message {
+            padding: 0.75rem;
+            background: #fcebeb;
+            color: #a32d2d;
+            border-radius: 6px;
+            font-size: 12px;
+            border-left: 4px solid #a32d2d;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e5e5e3;
+            padding-bottom: 1.5rem;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-title p {
+            font-size: 14px;
+            color: #8b8b86;
+        }
+        
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: #ecf9f3;
+            border-radius: 8px;
+            border: 0.5px solid #0d7b56;
+        }
+        
+        .auth-status.locked {
+            background: #fcebeb;
+            border-color: #a32d2d;
+        }
+        
+        .auth-status-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .auth-status-user {
+            font-size: 12px;
+            color: #0d7b56;
+        }
+        
+        .auth-status.locked .auth-status-user {
+            color: #a32d2d;
+        }
+        
+        .logout-button {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: 0.5px solid #d3d1c7;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1a1a18;
+            transition: all 0.2s;
+        }
+        
+        .logout-button:hover {
+            background: #f5f5f3;
+            border-color: #b4b2a9;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        
+        button:not(.logout-button) {
+            padding: 0.75rem 1.5rem;
+            border: 0.5px solid #d3d1c7;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a18;
+            transition: all 0.2s;
+        }
+        
+        button:not(.logout-button):hover:not(:disabled) {
+            background: #f5f5f3;
+            border-color: #b4b2a9;
+        }
+        
+        button:not(.logout-button):active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        button.primary {
+            background: #185fa5;
+            color: white;
+            border-color: #185fa5;
+        }
+        
+        button.primary:hover:not(:disabled) {
+            background: #134578;
+            border-color: #134578;
+        }
+        
+        .message {
+            padding: 1rem;
+            background: #e6f1fb;
+            color: #185fa5;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 13px;
+            border-left: 4px solid #185fa5;
+        }
+        
+        .message.locked {
+            background: #fcebeb;
+            color: #a32d2d;
+            border-left-color: #a32d2d;
+        }
+        
+        .add-client-panel {
+            background: #f5f5f3;
+            border: 1px solid #e5e5e3;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .add-client-panel.locked {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .add-client-panel h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 1rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #5f5e5a;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 0.75rem;
+            border: 0.5px solid #d3d1c7;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #185fa5;
+            box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: #f5f5f3;
+            border: 1px solid #e5e5e3;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 12px;
+            color: #8b8b86;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-value {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .legend-box.realised {
+            background: #e6f1fb;
+            border: 1px solid #185fa5;
+        }
+        
+        .legend-box.forecast {
+            background: #fef3c7;
+            border: 1px solid #ba7517;
+        }
+        
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        
+        .months-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .months-grid::-webkit-scrollbar-track {
+            background: #f9f9f7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb {
+            background: #d3d1c7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb:hover {
+            background: #b4b2a9;
+        }
+        
+        .month-column {
+            background: #f9f9f7;
+            border: 2px solid #e5e5e3;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 360px;
+            transition: all 0.3s ease;
+        }
+        
+        .month-column.drag-over {
+            background: #e6f1fb;
+            border-color: #185fa5;
+            box-shadow: 0 4px 12px rgba(24, 95, 165, 0.15);
+        }
+        
+        .month-header {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e5e3;
+        }
+        
+        .month-count {
+            font-size: 11px;
+            color: #8b8b86;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .clients-area {
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .client-item {
+            padding: 0.6rem 0.75rem;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .client-item:hover:not(.locked) {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .client-item:active {
+            cursor: grabbing;
+        }
+        
+        .client-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        
+        .client-item.locked {
+            cursor: default;
+        }
+        
+        .client-realised {
+            background: #e6f1fb;
+            color: #185fa5;
+        }
+        
+        .client-forecast {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .client-name {
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        .client-delete {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .client-delete:hover {
+            opacity: 1;
+        }
+        
+        .client-delete:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .status-section {
+            margin-bottom: 2rem;
+        }
+        
+        .status-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b8b86;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .status-item {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .status-halt {
+            background: #f5f5f3;
+            color: #5f5e5a;
+            border: 0.5px solid #e5e5e3;
+        }
+        
+        .status-cancel {
+            background: #fcebeb;
+            color: #a32d2d;
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e3;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a8a3;
+        }
+        
+        .success-message {
+            padding: 0.75rem 1rem;
+            background: #ecf9f3;
+            color: #0d7b56;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 1rem;
+            border-left: 4px solid #0d7b56;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .months-grid {
+                grid-template-columns: repeat(12, minmax(120px, 1fr));
+                gap: 0.75rem;
+            }
+            
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .month-column {
+                padding: 0.75rem;
+                min-height: 320px;
+            }
+            
+            .client-item {
+                padding: 0.5rem 0.6rem;
+                font-size: 11px;
+            }
+            
+            .header-top {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .auth-status {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">🔒 Connexion</h2>
+                <button onclick="closeLoginModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #8b8b86;">✕</button>
+            </div>
+            <p>Identifiant : <strong>FDESOUSA</strong><br>Mot de passe : <strong>Leanael@31570</strong></p>
+            <div class="login-form">
+                <div class="error-message" id="errorMessage"></div>
+                <div class="form-group">
+                    <label for="username">Identifiant</label>
+                    <input type="text" id="username" placeholder="Entrez votre identifiant" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" placeholder="Entrez votre mot de passe" autocomplete="off">
+                </div>
+                <button class="login-button" onclick="login()">Se connecter</button>
+                <button class="login-button" onclick="closeLoginModal()" style="background: white; color: #1a1a18; border: 0.5px solid #d3d1c7;">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1>Planning de production</h1>
+                    <p>Mise en production des clients – 12 mois</p>
+                </div>
+                <div class="auth-status locked" id="authStatus">
+                    <div>
+                        <div class="auth-status-text">🔒 Non connecté</div>
+                        <div class="auth-status-user" id="userDisplay">Accès lecture seule</div>
+                    </div>
+                    <button class="logout-button" onclick="logout()" id="logoutBtn" style="display: none;">Déconnexion</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button onclick="resetPlanning()" id="resetBtn" disabled>↻ Réinitialiser</button>
+                <button onclick="exportCSV()">⬇ Exporter en CSV</button>
+                <button onclick="window.print()">🖨 Imprimer</button>
+            </div>
+        </div>
+
+        <div class="add-client-panel locked" id="addPanel">
+            <h3>➕ Ajouter un nouveau client</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newClientName">Nom du client</label>
+                    <input type="text" id="newClientName" placeholder="Ex: Nouveau Client" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="newClientMonth">Mois</label>
+                    <select id="newClientMonth" disabled>
+                        <option value="Janvier">Janvier</option>
+                        <option value="Février">Février</option>
+                        <option value="Mars">Mars</option>
+                        <option value="Avril">Avril</option>
+                        <option value="Mai">Mai</option>
+                        <option value="Juin">Juin</option>
+                        <option value="Juillet">Juillet</option>
+                        <option value="Août">Août</option>
+                        <option value="Septembre">Septembre</option>
+                        <option value="Octobre">Octobre</option>
+                        <option value="Novembre">Novembre</option>
+                        <option value="Décembre">Décembre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newClientType">Type</label>
+                    <select id="newClientType" disabled>
+                        <option value="nouveau">Nouveau</option>
+                        <option value="migration">Migration</option>
+                    </select>
+                </div>
+                <button class="primary" onclick="addNewClient()" id="addBtn" disabled>Ajouter</button>
+            </div>
+            <div id="successMessage"></div>
+        </div>
+
+        <div class="message locked" id="lockedMessage">
+            🔒 Connectez-vous pour modifier le planning
+        </div>
+
+        <div class="message hidden" id="unlockedMessage">
+            💡 Glissez-déposez les clients pour les réorganiser • Cliquez ✕ pour supprimer
+        </div>
+
+        <div style="font-size: 12px; color: #8b8b86; margin-bottom: 1rem; text-align: right;">
+            ➜ 12 mois • Scroll horizontal si nécessaire
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <div class="summary-label">Total clients</div>
+                <div class="summary-value" id="total">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Réalisé (jan-juin)</div>
+                <div class="summary-value" id="realised">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Prévisionnel (juil+)</div>
+                <div class="summary-value" id="forecast">0</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box realised"></div>
+                <span>Réalisé (janvier à juin)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box forecast"></div>
+                <span>Prévisionnel (juillet et après)</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 16px;">🔄</span>
+                <span>Migration</span>
+            </div>
+        </div>
+
+        <div class="months-grid" id="monthsGrid"></div>
+
+        <div class="status-section">
+            <div class="status-title">Dossiers à l'arrêt</div>
+            <div class="status-items">
+                <div class="status-item status-halt">BGA</div>
+                <div class="status-item status-halt">Tiremaster</div>
+                <div class="status-item status-halt">Auto Discount Lease</div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div class="status-title">Annulation</div>
+            <div class="status-items">
+                <div class="status-item status-cancel">Cargo Corse</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Planning dynamique sur 12 mois • Sécurisé avec authentification • Drag and drop</p>
+        </div>
+    </div>
+
+    <script>
+        // Credentials
+        const VALID_USERNAME = 'FDESOUSA';
+        const VALID_PASSWORD = 'Leanael@31570';
+        
+        // Session
+        let isAuthenticated = false;
+        let currentUser = null;
+        
+        const monthOrder = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        
+        const defaultData = {
+            'Janvier': { clients: [], realised: true },
+            'Février': { clients: [
+                {name: 'AGLC', isMigration: true},
+                {name: 'Cool', isMigration: false},
+                {name: 'OC Lease', isMigration: false},
+                {name: 'Marie Galante', isMigration: true},
+                {name: '5B', isMigration: false}
+            ], realised: true },
+            'Mars': { clients: [
+                {name: 'Loca Express', isMigration: true},
+                {name: 'Musée', isMigration: true},
+                {name: 'Loc\'Alliance', isMigration: true},
+                {name: 'SL2S', isMigration: false},
+                {name: 'Exclusive Cars', isMigration: false}
+            ], realised: true },
+            'Avril': { clients: [
+                {name: 'Semi Loc', isMigration: true},
+                {name: 'Aloé', isMigration: false},
+                {name: 'Ollandini Avis', isMigration: false},
+                {name: 'Sixt Réunion', isMigration: false}
+            ], realised: true },
+            'Mai': { clients: [
+                {name: 'Ucar Harmony', isMigration: false},
+                {name: 'Elite', isMigration: false},
+                {name: 'EMB', isMigration: false},
+                {name: 'de Willermin LLD', isMigration: false},
+                {name: 'Locaban', isMigration: true},
+                {name: 'CTTRS', isMigration: false},
+                {name: 'Only Drive', isMigration: false}
+            ], realised: true },
+            'Juin': { clients: [
+                {name: 'de Willermin LCD', isMigration: false},
+                {name: 'Dynamyk RDC', isMigration: false},
+                {name: 'SCF', isMigration: false}
+            ], realised: true },
+            'Juillet': { clients: [
+                {name: 'UPS', isMigration: false},
+                {name: 'Utilitaire 13', isMigration: false},
+                {name: 'Leriche', isMigration: true},
+                {name: 'Loc At Me', isMigration: true},
+                {name: 'Escale', isMigration: false},
+                {name: 'Alte', isMigration: false},
+                {name: 'Carepolis', isMigration: false},
+                {name: 'Hertz BPA', isMigration: false}
+            ], realised: false },
+            'Août': { clients: [
+                {name: 'JB Location', isMigration: true}
+            ], realised: false },
+            'Septembre': { clients: [
+                {name: 'Atlas Avis', isMigration: false},
+                {name: 'AJP Avis', isMigration: false},
+                {name: 'RL Location', isMigration: false},
+                {name: 'KSR', isMigration: false},
+                {name: 'Ciel', isMigration: false},
+                {name: 'Réseau Poids Lourds', isMigration: false},
+                {name: 'Flexi Drive', isMigration: false}
+            ], realised: false },
+            'Octobre': { clients: [], realised: false },
+            'Novembre': { clients: [
+                {name: 'SIT', isMigration: false}
+            ], realised: false },
+            'Décembre': { clients: [], realised: false }
+        };
+        
+        let monthsData = loadFromStorage() || JSON.parse(JSON.stringify(defaultData));
+        let draggedElement = null;
+
+        // ============ AUTHENTIFICATION ============
+        function openLoginModal() {
+            document.getElementById('loginOverlay').classList.add('show');
+            document.getElementById('username').focus();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginOverlay').classList.remove('show');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+                isAuthenticated = true;
+                currentUser = username;
+                sessionStorage.setItem('auth', 'true');
+                sessionStorage.setItem('user', username);
+                errorMsg.classList.remove('show');
+                updateAuthUI();
+                closeLoginModal();
+                initPlanning();
+            } else {
+                errorMsg.textContent = 'Identifiant ou mot de passe incorrect';
+                errorMsg.classList.add('show');
+            }
+        }
+
+        function logout() {
+            isAuthenticated = false;
+            currentUser = null;
+            sessionStorage.removeItem('auth');
+            sessionStorage.removeItem('user');
+            updateAuthUI();
+            initPlanning();
+            openLoginModal();
+        }
+
+        function updateAuthUI() {
+            const authStatus = document.getElementById('authStatus');
+            const userDisplay = document.getElementById('userDisplay');
+            const addPanel = document.getElementById('addPanel');
+            const lockedMsg = document.getElementById('lockedMessage');
+            const unlockedMsg = document.getElementById('unlockedMessage');
+            
+            if (isAuthenticated) {
+                authStatus.classList.remove('locked');
+                authStatus.innerHTML = `<div><div class="auth-status-text">✓ Connecté</div><div class="auth-status-user">${currentUser}</div></div><button class="logout-button" onclick="logout()">Déconnexion</button>`;
+                
+                addPanel.classList.remove('locked');
+                document.getElementById('newClientName').disabled = false;
+                document.getElementById('newClientMonth').disabled = false;
+                document.getElementById('newClientType').disabled = false;
+                document.getElementById('addBtn').disabled = false;
+                document.getElementById('resetBtn').disabled = false;
+                
+                lockedMsg.classList.add('hidden');
+                unlockedMsg.classList.remove('hidden');
+            } else {
+                authStatus.classList.add('locked');
+                authStatus.innerHTML = '<div><div class="auth-status-text">🔓 Non connecté</div><div class="auth-status-user">Lecture seule</div></div><button class="logout-button" onclick="openLoginModal()">Se connecter</button>';
+                
+                addPanel.classList.add('locked');
+                document.getElementById('newClientName').disabled = true;
+                document.getElementById('newClientMonth').disabled = true;
+                document.getElementById('newClientType').disabled = true;
+                document.getElementById('addBtn').disabled = true;
+                document.getElementById('resetBtn').disabled = true;
+                
+                lockedMsg.classList.remove('hidden');
+                unlockedMsg.classList.add('hidden');
+            }
+        }
+
+        function checkAuth() {
+            if (sessionStorage.getItem('auth') === 'true') {
+                isAuthenticated = true;
+                currentUser = sessionStorage.getItem('user');
+                updateAuthUI();
+            } else {
+                updateAuthUI();
+            }
+        }
+
+        // ============ GESTION DES DONNÉES ============
+        function saveToStorage() {
+            localStorage.setItem('planningData', JSON.stringify(monthsData));
+        }
+
+        function loadFromStorage() {
+            const data = localStorage.getItem('planningData');
+            return data ? JSON.parse(data) : null;
+        }
+
+        function addNewClient() {
+            if (!isAuthenticated) {
+                alert('Vous devez être connecté pour ajouter un client');
+                return;
+            }
+            
+            const nameInput = document.getElementById('newClientName');
+            const monthSelect = document.getElementById('newClientMonth');
+            const typeSelect = document.getElementById('newClientType');
+            const successDiv = document.getElementById('successMessage');
+            
+            const clientName = nameInput.value.trim();
+            const month = monthSelect.value;
+            const isMigration = typeSelect.value === 'migration';
+            
+            if (!clientName) {
+                alert('Veuillez entrer un nom de client');
+                return;
+            }
+            
+            const newClient = {
+                name: clientName,
+                isMigration: isMigration
+            };
+            
+            if (!monthsData[month].clients.some(c => c.name === clientName)) {
+                monthsData[month].clients.push(newClient);
+                saveToStorage();
+                initPlanning();
+                
+                successDiv.innerHTML = `<div class="success-message">✓ Client "${clientName}" ajouté au mois de ${month}</div>`;
+                
+                nameInput.value = '';
+                monthSelect.value = 'Février';
+                typeSelect.value = 'nouveau';
+                
+                setTimeout(() => {
+                    successDiv.innerHTML = '';
+                }, 3000);
+            } else {
+                alert('Ce client existe déjà');
+            }
+        }
+
+        function deleteClient(clientName, month) {
+            if (!isAuthenticated) {
+                alert('Vous devez être connecté pour supprimer un client');
+                return;
+            }
+            
+            if (confirm(`Êtes-vous sûr de vouloir supprimer "${clientName}" ?`)) {
+                monthsData[month].clients = monthsData[month].clients.filter(c => c.name !== clientName);
+                saveToStorage();
+                initPlanning();
+            }
+        }
+
+        function initPlanning() {
+            const grid = document.getElementById('monthsGrid');
+            grid.innerHTML = '';
+            
+            monthOrder.forEach(month => {
+                const monthData = monthsData[month];
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month-column';
+                monthDiv.id = `month-${month}`;
+                
+                if (isAuthenticated) {
+                    monthDiv.ondrop = handleDrop;
+                    monthDiv.ondragover = handleDragOver;
+                    monthDiv.ondragleave = handleDragLeave;
+                }
+                
+                const header = document.createElement('div');
+                header.className = 'month-header';
+                header.textContent = month;
+                
+                const count = document.createElement('div');
+                count.className = 'month-count';
+                count.textContent = `${monthData.clients.length} client${monthData.clients.length > 1 ? 's' : ''}`;
+                
+                const area = document.createElement('div');
+                area.className = 'clients-area';
+                
+                monthData.clients.forEach(client => {
+                    const clientDiv = document.createElement('div');
+                    clientDiv.className = `client-item ${monthData.realised ? 'client-realised' : 'client-forecast'}`;
+                    
+                    if (isAuthenticated) {
+                        clientDiv.draggable = true;
+                        clientDiv.ondragstart = handleDragStart;
+                        clientDiv.ondragend = handleDragEnd;
+                    } else {
+                        clientDiv.classList.add('locked');
+                    }
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'client-name';
+                    nameSpan.textContent = client.isMigration ? '🔄 ' + client.name : client.name;
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'client-delete';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.disabled = !isAuthenticated;
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteClient(client.name, month);
+                    };
+                    
+                    clientDiv.appendChild(nameSpan);
+                    clientDiv.appendChild(deleteBtn);
+                    
+                    clientDiv.dataset.month = month;
+                    clientDiv.dataset.client = JSON.stringify(client);
+                    area.appendChild(clientDiv);
+                });
+                
+                monthDiv.appendChild(header);
+                monthDiv.appendChild(count);
+                monthDiv.appendChild(area);
+                grid.appendChild(monthDiv);
+            });
+            
+            updateSummary();
+        }
+
+        function handleDragStart(e) {
+            if (!isAuthenticated) return;
+            draggedElement = e.target.closest('.client-item');
+            draggedElement.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            draggedElement.classList.remove('dragging');
+            document.querySelectorAll('.month-column').forEach(m => m.classList.remove('drag-over'));
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) {
+            if (!isAuthenticated) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            if (!isAuthenticated) return;
+            if(e.currentTarget === e.target) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            if (!isAuthenticated) return;
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dropZone = e.currentTarget;
+            dropZone.classList.remove('drag-over');
+            
+            if (!draggedElement) return;
+            
+            const oldMonth = draggedElement.dataset.month;
+            const newMonth = dropZone.id.replace('month-', '');
+            const client = JSON.parse(draggedElement.dataset.client);
+            
+            if (oldMonth !== newMonth) {
+                monthsData[oldMonth].clients = monthsData[oldMonth].clients.filter(c => c.name !== client.name);
+                monthsData[newMonth].clients.push(client);
+                
+                saveToStorage();
+                initPlanning();
+            }
+            
+            return false;
+        }
+
+        function updateSummary() {
+            let total = 0;
+            let realised = 0;
+            
+            monthOrder.forEach(month => {
+                const count = monthsData[month].clients.length;
+                total += count;
+                if (monthsData[month].realised) {
+                    realised += count;
+                }
+            });
+            
+            const forecast = total - realised;
+            
+            document.getElementById('total').textContent = total;
+            document.getElementById('realised').textContent = realised;
+            document.getElementById('forecast').textContent = forecast;
+        }
+
+        function resetPlanning() {
+            if (!isAuthenticated) {
+                alert('Vous devez être connecté pour réinitialiser');
+                return;
+            }
+            
+            if (confirm('Êtes-vous sûr ? Cela réinitialisera le planning à la configuration initiale.')) {
+                monthsData = JSON.parse(JSON.stringify(defaultData));
+                saveToStorage();
+                initPlanning();
+            }
+        }
+
+        function exportCSV() {
+            let csv = 'Mois,Nombre de clients,Clients\n';
+            monthOrder.forEach(month => {
+                const data = monthsData[month];
+                const clients = data.clients.map(c => c.name).join('; ');
+                csv += `"${month}",${data.clients.length},"${clients}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `planning_production_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Entrée au login avec Entrée
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+            document.getElementById('username').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+            checkAuth();
+            // Initialiser le planning même sans connexion
+            if (!isAuthenticated) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                initPlanning();
+            }
+        });
+    </script>
+</body>
+</html>
