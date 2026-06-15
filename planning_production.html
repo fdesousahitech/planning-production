@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning de production - Dynamique & Persistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #f9f9f7;
+            color: #1a1a18;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e5e5e3;
+            padding-bottom: 1.5rem;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #8b8b86;
+            margin-bottom: 1.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            border: 0.5px solid #d3d1c7;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a18;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #f5f5f3;
+            border-color: #b4b2a9;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button.primary {
+            background: #185fa5;
+            color: white;
+            border-color: #185fa5;
+        }
+        
+        button.primary:hover {
+            background: #134578;
+            border-color: #134578;
+        }
+        
+        .message {
+            padding: 1rem;
+            background: #e6f1fb;
+            color: #185fa5;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 13px;
+            border-left: 4px solid #185fa5;
+        }
+        
+        .add-client-panel {
+            background: #f5f5f3;
+            border: 1px solid #e5e5e3;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .add-client-panel h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1a18;
+            margin-bottom: 1rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #5f5e5a;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 0.75rem;
+            border: 0.5px solid #d3d1c7;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #185fa5;
+            box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: #f5f5f3;
+            border: 1px solid #e5e5e3;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 12px;
+            color: #8b8b86;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-value {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a18;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            font-size: 14px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .legend-box.realised {
+            background: #e6f1fb;
+            border: 1px solid #185fa5;
+        }
+        
+        .legend-box.forecast {
+            background: #fef3c7;
+            border: 1px solid #ba7517;
+        }
+        
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(9, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        
+        .months-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .months-grid::-webkit-scrollbar-track {
+            background: #f9f9f7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb {
+            background: #d3d1c7;
+            border-radius: 10px;
+        }
+        
+        .months-grid::-webkit-scrollbar-thumb:hover {
+            background: #b4b2a9;
+        }
+        
+        .month-column {
+            background: #f9f9f7;
+            border: 2px solid #e5e5e3;
+            border-radius: 12px;
+            padding: 1.25rem;
+            min-height: 380px;
+            transition: all 0.3s ease;
+        }
+        
+        .month-column.drag-over {
+            background: #e6f1fb;
+            border-color: #185fa5;
+            box-shadow: 0 4px 12px rgba(24, 95, 165, 0.15);
+        }
+        
+        .month-header {
+            font-weight: 500;
+            font-size: 15px;
+            color: #1a1a18;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e5e3;
+        }
+        
+        .month-count {
+            font-size: 12px;
+            color: #8b8b86;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .clients-area {
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .client-item {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .client-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .client-item:active {
+            cursor: grabbing;
+        }
+        
+        .client-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        
+        .client-realised {
+            background: #e6f1fb;
+            color: #185fa5;
+        }
+        
+        .client-forecast {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .client-name {
+            flex: 1;
+        }
+        
+        .client-delete {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .client-delete:hover {
+            opacity: 1;
+        }
+        
+        .status-section {
+            margin-bottom: 2rem;
+        }
+        
+        .status-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b8b86;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .status-item {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .status-halt {
+            background: #f5f5f3;
+            color: #5f5e5a;
+            border: 0.5px solid #e5e5e3;
+        }
+        
+        .status-cancel {
+            background: #fcebeb;
+            color: #a32d2d;
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e3;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a8a3;
+        }
+        
+        .success-message {
+            padding: 0.75rem 1rem;
+            background: #ecf9f3;
+            color: #0d7b56;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 1rem;
+            border-left: 4px solid #0d7b56;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .months-grid {
+                grid-template-columns: repeat(9, minmax(140px, 1fr));
+            }
+            
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            button {
+                padding: 0.6rem 1.2rem;
+                font-size: 12px;
+            }
+            
+            .month-column {
+                min-height: 320px;
+            }
+            
+            .clients-area {
+                min-height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Planning de production</h1>
+            <p class="subtitle">Mise en production des clients – Vue dynamique & Persistante</p>
+            <div class="controls">
+                <button onclick="resetPlanning()">↻ Réinitialiser</button>
+                <button onclick="exportCSV()">⬇ Exporter en CSV</button>
+                <button onclick="window.print()">🖨 Imprimer</button>
+            </div>
+        </div>
+
+        <div class="add-client-panel">
+            <h3>➕ Ajouter un nouveau client</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newClientName">Nom du client</label>
+                    <input type="text" id="newClientName" placeholder="Ex: Nouveau Client">
+                </div>
+                <div class="form-group">
+                    <label for="newClientMonth">Mois de production</label>
+                    <select id="newClientMonth">
+                        <option value="Février">Février</option>
+                        <option value="Mars">Mars</option>
+                        <option value="Avril">Avril</option>
+                        <option value="Mai">Mai</option>
+                        <option value="Juin">Juin</option>
+                        <option value="Juillet">Juillet</option>
+                        <option value="Août">Août</option>
+                        <option value="Septembre">Septembre</option>
+                        <option value="Novembre">Novembre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newClientType">Type</label>
+                    <select id="newClientType">
+                        <option value="nouveau">Nouveau client</option>
+                        <option value="migration">Migration</option>
+                    </select>
+                </div>
+                <button class="primary" onclick="addNewClient()">Ajouter</button>
+            </div>
+            <div id="successMessage"></div>
+        </div>
+
+        <div class="message">
+            💡 Glissez et déposez les clients pour les déplacer vers un autre mois
+        </div>
+
+        <div style="font-size: 12px; color: #8b8b86; margin-bottom: 1rem; text-align: right;">
+            ➜ Tous les mois sur une ligne • Scroll horizontal si nécessaire
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <div class="summary-label">Total clients</div>
+                <div class="summary-value" id="total">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Réalisé (fév-juin)</div>
+                <div class="summary-value" id="realised">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Prévisionnel (juil+)</div>
+                <div class="summary-value" id="forecast">0</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box realised"></div>
+                <span>Réalisé (février à juin)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box forecast"></div>
+                <span>Prévisionnel (juillet et après)</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 18px;">🔄</span>
+                <span>Migration vers nouvelle version</span>
+            </div>
+        </div>
+
+        <div class="months-grid" id="monthsGrid"></div>
+
+        <div class="status-section">
+            <div class="status-title">Dossiers à l'arrêt</div>
+            <div class="status-items">
+                <div class="status-item status-halt">BGA</div>
+                <div class="status-item status-halt">Tiremaster</div>
+                <div class="status-item status-halt">Auto Discount Lease</div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div class="status-title">Annulation</div>
+            <div class="status-items">
+                <div class="status-item status-cancel">Cargo Corse</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Planning dynamique avec persistance des données • Sauvegarde automatique</p>
+        </div>
+    </div>
+
+    <script>
+        const monthOrder = ['Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Novembre'];
+        const migratedClients = new Set(['AGLC', 'Marie Galante', 'Loca Express', 'Musée', 'Loc\'Alliance', 'Leriche', 'Loc At Me', 'JB Location', 'Semi Loc', 'Locaban']);
+        
+        const defaultData = {
+            'Février': { clients: ['AGLC', 'Cool', 'OC Lease', 'Marie Galante', '5B'], realised: true },
+            'Mars': { clients: ['Loca Express', 'Musée', 'Loc\'Alliance', 'SL2S', 'Exclusive Cars'], realised: true },
+            'Avril': { clients: ['Semi Loc', 'Aloé', 'Ollandini Avis', 'Sixt Réunion'], realised: true },
+            'Mai': { clients: ['Ucar Harmony', 'Elite', 'EMB', 'de Willermin LLD', 'Locaban', 'CTTRS', 'Only Drive'], realised: true },
+            'Juin': { clients: ['de Willermin LCD', 'Dynamyk RDC', 'SCF'], realised: true },
+            'Juillet': { clients: ['UPS', 'Utilitaire 13', 'Leriche', 'Loc At Me', 'Escale', 'Alte', 'Carepolis', 'Hertz BPA'], realised: false },
+            'Août': { clients: ['JB Location'], realised: false },
+            'Septembre': { clients: ['Atlas Avis', 'AJP Avis', 'RL Location', 'KSR', 'Ciel', 'Réseau Poids Lourds', 'Flexi Drive'], realised: false },
+            'Novembre': { clients: ['SIT'], realised: false }
+        };
+        
+        let monthsData = loadFromStorage() || JSON.parse(JSON.stringify(defaultData));
+        let draggedElement = null;
+
+        function saveToStorage() {
+            localStorage.setItem('planningData', JSON.stringify(monthsData));
+        }
+
+        function loadFromStorage() {
+            const data = localStorage.getItem('planningData');
+            return data ? JSON.parse(data) : null;
+        }
+
+        function addNewClient() {
+            const nameInput = document.getElementById('newClientName');
+            const monthSelect = document.getElementById('newClientMonth');
+            const typeSelect = document.getElementById('newClientType');
+            const successDiv = document.getElementById('successMessage');
+            
+            const clientName = nameInput.value.trim();
+            const month = monthSelect.value;
+            const type = typeSelect.value;
+            
+            if (!clientName) {
+                alert('Veuillez entrer un nom de client');
+                return;
+            }
+            
+            // Ajouter le client
+            if (!monthsData[month].clients.includes(clientName)) {
+                monthsData[month].clients.push(clientName);
+                
+                // Ajouter à la liste des migrations si nécessaire
+                if (type === 'migration') {
+                    migratedClients.add(clientName);
+                }
+                
+                saveToStorage();
+                initPlanning();
+                
+                // Afficher le message de succès
+                successDiv.innerHTML = `<div class="success-message">✓ Client "${clientName}" ajouté au mois de ${month}</div>`;
+                
+                // Réinitialiser le formulaire
+                nameInput.value = '';
+                monthSelect.value = 'Février';
+                typeSelect.value = 'nouveau';
+                
+                // Masquer le message après 3 secondes
+                setTimeout(() => {
+                    successDiv.innerHTML = '';
+                }, 3000);
+            } else {
+                alert('Ce client existe déjà');
+            }
+        }
+
+        function deleteClient(clientName, month) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer "${clientName}" ?`)) {
+                monthsData[month].clients = monthsData[month].clients.filter(c => c !== clientName);
+                saveToStorage();
+                initPlanning();
+            }
+        }
+
+        function initPlanning() {
+            const grid = document.getElementById('monthsGrid');
+            grid.innerHTML = '';
+            
+            monthOrder.forEach(month => {
+                const monthData = monthsData[month];
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month-column';
+                monthDiv.id = `month-${month}`;
+                monthDiv.ondrop = handleDrop;
+                monthDiv.ondragover = handleDragOver;
+                monthDiv.ondragleave = handleDragLeave;
+                
+                const header = document.createElement('div');
+                header.className = 'month-header';
+                header.textContent = month;
+                
+                const count = document.createElement('div');
+                count.className = 'month-count';
+                count.textContent = `${monthData.clients.length} client${monthData.clients.length > 1 ? 's' : ''}`;
+                count.id = `count-${month}`;
+                
+                const area = document.createElement('div');
+                area.className = 'clients-area';
+                area.id = `area-${month}`;
+                
+                monthData.clients.forEach(client => {
+                    const clientDiv = document.createElement('div');
+                    clientDiv.className = `client-item ${monthData.realised ? 'client-realised' : 'client-forecast'}`;
+                    clientDiv.draggable = true;
+                    
+                    const isMigration = migratedClients.has(client);
+                    const clientNameSpan = document.createElement('span');
+                    clientNameSpan.className = 'client-name';
+                    clientNameSpan.textContent = isMigration ? '🔄 ' + client : client;
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'client-delete';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteClient(client, month);
+                    };
+                    
+                    clientDiv.appendChild(clientNameSpan);
+                    clientDiv.appendChild(deleteBtn);
+                    
+                    clientDiv.ondragstart = handleDragStart;
+                    clientDiv.ondragend = handleDragEnd;
+                    clientDiv.dataset.month = month;
+                    clientDiv.dataset.client = client;
+                    area.appendChild(clientDiv);
+                });
+                
+                monthDiv.appendChild(header);
+                monthDiv.appendChild(count);
+                monthDiv.appendChild(area);
+                grid.appendChild(monthDiv);
+            });
+            
+            updateSummary();
+        }
+
+        function handleDragStart(e) {
+            draggedElement = e.target.closest('.client-item');
+            draggedElement.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            draggedElement.classList.remove('dragging');
+            document.querySelectorAll('.month-column').forEach(m => m.classList.remove('drag-over'));
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            if(e.currentTarget === e.target) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dropZone = e.currentTarget;
+            dropZone.classList.remove('drag-over');
+            
+            if (!draggedElement) return;
+            
+            const oldMonth = draggedElement.dataset.month;
+            const newMonth = dropZone.id.replace('month-', '');
+            const client = draggedElement.dataset.client;
+            
+            if (oldMonth !== newMonth) {
+                monthsData[oldMonth].clients = monthsData[oldMonth].clients.filter(c => c !== client);
+                monthsData[newMonth].clients.push(client);
+                
+                saveToStorage();
+                initPlanning();
+            }
+            
+            return false;
+        }
+
+        function updateSummary() {
+            let totalClients = 0;
+            let realisedCount = 0;
+            
+            monthOrder.forEach(month => {
+                const count = monthsData[month].clients.length;
+                totalClients += count;
+                if (monthsData[month].realised) {
+                    realisedCount += count;
+                }
+            });
+            
+            const forecastCount = totalClients - realisedCount;
+            
+            document.getElementById('total').textContent = totalClients;
+            document.getElementById('realised').textContent = realisedCount;
+            document.getElementById('forecast').textContent = forecastCount;
+        }
+
+        function resetPlanning() {
+            if (confirm('Êtes-vous sûr ? Cela réinitialisera le planning à la configuration initiale.')) {
+                monthsData = JSON.parse(JSON.stringify(defaultData));
+                saveToStorage();
+                initPlanning();
+            }
+        }
+
+        function exportCSV() {
+            let csv = 'Mois,Nombre de clients,Clients\n';
+            monthOrder.forEach(month => {
+                const data = monthsData[month];
+                const clients = data.clients.join('; ');
+                csv += `"${month}",${data.clients.length},"${clients}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `planning_production_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialiser au chargement
+        initPlanning();
+    </script>
+</body>
+</html>
